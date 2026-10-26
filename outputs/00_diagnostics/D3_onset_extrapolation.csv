@@ -1,0 +1,15 @@
+split_id,split_desc,axis,feature_group,threshold,n_train_run,n_test_run,mae_train_sample,mae_test_sample,mae_train_sec,mae_test_sec,extrapolation_gap_sample,signed_err_test_sample,signed_err_test_sec
+X0a,tension interpolation (control),T,level,0.03375,126,84,58.0,55.0,6.322,5.995,-3.0,44.5,4.8505
+X0a,tension interpolation (control),T,shape,0.039377283254535204,126,84,63.0,65.5,6.867,7.1395,2.5,-32.5,-3.5425
+X0b,speed interpolation (control),V,level,0.03468750000000005,120,90,54.0,46.5,5.886,5.0685,-7.5,45.0,4.905
+X0b,speed interpolation (control),V,shape,0.03846122557870248,120,90,72.5,58.0,7.9025,6.322,-14.5,-33.5,-3.6515
+X1,tension extrapolation upward,T,level,0.032812500000000015,126,84,53.0,67.0,5.777,7.303,14.0,67.0,7.303
+X1,tension extrapolation upward,T,shape,0.03735155805169173,126,84,63.0,83.5,6.867,9.1015,20.5,-25.0,-2.725
+X2,tension extrapolation downward,T,level,0.03515625,126,84,54.5,46.0,5.9405,5.014,-8.5,42.5,4.6325
+X2,tension extrapolation downward,T,shape,0.03940907759419609,126,84,63.0,64.5,6.867,7.0305,1.5,-29.5,-3.2155
+X3,speed extrapolation upward,V,level,0.03343750000000004,90,60,45.0,64.0,4.905,6.976,19.0,64.0,6.976
+X3,speed extrapolation upward,V,shape,0.03235736404493619,90,60,78.5,221.0,8.5565,24.089,142.5,221.0,24.089
+X4,speed extrapolation downward,V,level,0.03468750000000005,120,60,58.5,51.5,6.3765,5.6135,-7.0,46.0,5.014
+X4,speed extrapolation downward,V,shape,0.041384460986113265,120,60,38.0,118.5,4.142,12.9165,80.5,-118.5,-12.9165
+X6,double extrapolation (tension & speed),T+V,level,0.03249999999999993,54,24,47.0,90.5,5.123,9.8645,43.5,90.5,9.8645
+X6,double extrapolation (tension & speed),T+V,shape,0.02948634335492337,54,24,65.0,1093.5,7.085,119.1915,1028.5,1093.5,119.1915
