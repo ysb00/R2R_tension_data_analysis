@@ -72,11 +72,20 @@
 
 ---
 
-## 4. 실행 환경 문제 (차단 요인)
+## 4. 실행 환경 (2026-10-26 해소)
 
-- 필요 패키지: `matplotlib`, `scipy`, `scikit-learn` (미설치). 현재 설치: `numpy` 2.5.3, `pandas` 3.0.5, `openpyxl` 3.1.5.
-- 환경 네트워크 정책이 `pypi.org`를 차단 (proxy 403) → 설치 불가.
-- 해결: cloud environment 설정 → Network access에서 `pypi.org`, `files.pythonhosted.org` 허용. 안내: https://code.claude.com/docs/en/cloud-environments#network-access
+이전 차단 요인(`matplotlib` / `scipy` / `scikit-learn` 미설치, `pypi.org` proxy 403)은 **해소되었다.**
+현재 로컬 환경 설치 현황:
+
+| 패키지 | 버전 |
+|---|---|
+| `numpy` | 2.4.4 |
+| `pandas` | 3.0.3 |
+| `scipy` | 1.17.1 |
+| `scikit-learn` | 1.9.0 |
+| `matplotlib` | 3.11.0 |
+| `openpyxl` | 3.1.5 |
+| `pywt` (PyWavelets) | **미설치** → I8의 wavelet은 계획대로 제외, STFT만 수행 |
 
 ---
 
@@ -84,9 +93,10 @@
 
 | 순서 | 작업 | 상태 |
 |---|---|---|
-| 1 | 네트워크 설정 변경 및 패키지 설치 | 사용자 조치 대기 |
+| 0 | `code/01_merge.py` 복원·실행 (zip → `outputs/01_merge/`) | **완료 (2026-10-26)**. `data_dictionary.md`의 모든 수치 재현 확인 |
+| 1 | 네트워크 설정 변경 및 패키지 설치 | **완료 (2026-10-26)**. 4절 참조 |
 | 2 | 3절 세부 구현 사항 검토·승인 | 사용자 검토 대기 |
-| 3 | `01_folds.py` → `02_features.py` → `03_evaluation.py` 구현·실행 | 대기 |
+| 3 | `01_folds.py` → `02_features.py` → `03_evaluation.py` 구현·실행 | 2번 승인 후 착수 |
 | 4 | `docs/outputs_guide.md`, `docs/worklog.md` 작성 | 대기 |
 | 5 | 결과 해석: 각 아이디어(I1, I3, I6–I9, I11, I12)의 채택/기각 판단 | 대기 |
 | 6 | `Rewinder roll diameter (mm)` 사용 여부 결정 → I4, I5 분석 | 결정 필요 |
