@@ -14,11 +14,12 @@
 | 3 | 상태 | **2상태만.** ambiguous(2) 채점 제외 |
 | 4 | 조건 축 | **장력축·속도축 모두** |
 | 5 | 데이터 처리 | **B의 방식을 그대로 승계** — 비교군과 동등한 설정이어야 한다 |
-| 6 | 기존 문서 | 계획 문서 4개 **삭제 확정**, 계획 새로 작성 |
+| 6 | 기존 문서 | 계획 새로 작성. 기존 계획 문서 4개는 **`reference_*.md` 로 참고용 보존** (사용자가 원격에서 rename) |
 
 ### 한 일
-- 기존 계획 문서 4개(`feature_analysis_plan.md`, `cost_modification_ideas.md`, 구 `research_plan.md`,
-  `analysis_ideas_Claude.md`)를 삭제하고 `docs/research_plan.md` 를 새로 썼다.
+- `docs/research_plan.md` 를 새로 썼다. 기존 계획 문서 4개는 사용자가 원격에서 `reference_*.md` 로
+  rename 해 **참고용으로 보존**했다. 참고 문서의 전제(좌표계 중심 설계, 컬럼 추가, label-free 설계)는
+  새 계획에 승계되지 않는다.
 - B의 `evaluation.py` · `01_stat_ssd.py` · `04_cost.py` 에서 **실제 데이터 처리 규약을 확인해 1절로 고정**했다.
 - 사용자 제안 4계열(스펙트럼 / 위상 / 비정상성 / 물리기반)의 실현성을 실측으로 판정했다 (계획 3.1절).
 - 컬럼 추가는 **불필요**해졌다 (단일 신호 제약). `01_merge.py` 재생성 없음.

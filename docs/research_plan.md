@@ -4,7 +4,7 @@
 - 상태: **계획 (구현 전)**. 6절 승인 대기
 - 저장소: `https://github.com/ysb00/R2R_tension_data_analysis` (본 저장소, 이하 **A**)
 - 제안 방법 저장소: `https://github.com/ysb00/R2R_steadyState_identification_for_changing_condition` (이하 **B**, 로컬 `C:\Users\KIMM\research\informs-paper`)
-- 이전 계획 문서(`feature_analysis_plan.md`, `cost_modification_ideas.md`, 구 `research_plan.md`, `analysis_ideas_Claude.md`)는 **삭제됐다.** 본 문서가 유효 계획이다.
+- 이전 계획 문서 4개는 `docs/reference_*.md` 로 **참고용 보존** 상태다 (`reference_research_plan.md`, `reference_analysis_ideas_Claude.md`, `reference_feature_analysis_plan.md`, `reference_cost_modification_ideas.md`). **본 문서가 유효 계획이고**, 참고 문서의 전제(좌표계 중심 설계, 컬럼 추가, label-free 설계)는 본 문서에 승계되지 않는다.
 
 ---
 
