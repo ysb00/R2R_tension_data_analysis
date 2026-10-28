@@ -15,4 +15,4 @@ RESIDUAL,e = Film Tension #1 (kg) - Film-Tension Setting Value (kg)
 LABEL_USED,False
 IN_PATH,outputs/01_merge/merged_data.csv
 N_FEATURES,16
-FAMILY_DIR,"{'F0': 'F0_baseline', 'F1': 'F1_amplitude', 'F2': 'F2_shape', 'F3': 'F3_spectral', 'F4': 'F4_trend', 'F5': 'F5_envelope', 'F6': 'F6_phase', 'F7': 'F7_memory'}"
+FAMILY_DIR,"{'P0': 'P0_baseline', 'P1': 'P1_spectral', 'P2': 'P2_phase', 'P3': 'P3_nonstationarity', 'P4': 'P4_physical', 'P5': 'P5_additional'}"

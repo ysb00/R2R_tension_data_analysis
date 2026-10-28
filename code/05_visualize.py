@@ -19,8 +19,8 @@
 #             창 144 + backfill 이 과도 구간 분해능을 0 으로 만드는 효과(계획 L2)를 계열별로 본다.
 #
 #        A-6 (계획 4.6절) 의 그림 2종은 해당 계열 폴더에 함께 들어간다.
-#          F3_spectral/ spectrogram_W64         과도 -> 정상 전이에서 스펙트럼이 어떻게 바뀌는지
-#          F6_phase/    phase_portrait_lag1     steady 의 limit cycle vs transient 의 이탈
+#          P1_spectral/ spectrogram_W64         과도 -> 정상 전이에서 스펙트럼이 어떻게 바뀌는지
+#          P2_phase/    phase_portrait_lag1     steady 의 limit cycle vs transient 의 이탈
 #
 #        대표 run : 각 속도 1개, 장력·ReWinder 는 중앙값 수준 (승인 #13). 7개 run.
 #        Δt = 1 샘플 (0.109 s) (승인 #7, **임의의 값**).
@@ -33,8 +33,9 @@
 #        outputs/02_features/{계열}/features_W{W}.csv.gz, _cross/feature_scaling.csv
 #        outputs/03_screening/_cross/D_summary_all.csv  (분리도 D — 같은 코드로 산출된 값 재사용)
 # 출력 : outputs/05_visualize/  — feature 계열마다 폴더 (02~04 와 같은 이름)
-#          F0_baseline/ ~ F7_memory/  그림 3종 (+ F3 spectrogram, F6 phase portrait)
+#          P0_baseline/ ~ P5_additional/  그림 3종 (+ P1 spectrogram, P2 phase portrait)
 #          _cross/                    전 계열 분리도 heatmap, 대표 run 목록, hyperparameters.csv
+#        마지막 단계에서 `docs/methods/{계열}.md` 를 전 단계의 같은 계열 폴더로 복사한다 (Step 8)
 # 실행 : python code/05_visualize.py      (03_screening.py 다음에 실행한다)
 # =============================================================================
 import os, sys, time
@@ -81,11 +82,15 @@ FEAT_DIR = 'outputs/02_features'
 SCREEN_DIR = 'outputs/03_screening'
 OUT_DIR = 'outputs/05_visualize'
 CROSS_DIR = '_cross'             # 계열에 속하지 않는 산출물을 모으는 폴더 이름 (02~04 와 같다)
-SPECTROGRAM_FAMILY = 'F3'        # spectrogram 은 스펙트럼 계열의 설명 그림이다
-PHASE_FAMILY = 'F6'              # phase portrait 은 위상 계열의 설명 그림이다
+SPECTROGRAM_FAMILY = 'P1'        # spectrogram 은 제안 P1(스펙트럼) 계열의 설명 그림이다
+PHASE_FAMILY = 'P2'              # phase portrait 은 제안 P2(위상) 계열의 설명 그림이다
 
 T1 = 'Film Tension #1 (kg)'      # 원본 컬럼명 (변경하지 않음)
 TS, RS, VS = ev.TS, ev.RS, ev.VS
+
+# 계열별 고정 색 — 03·04 와 같은 배정 (P0 검정 / 제안 4계열 유채색 / P5 회색)
+FAMILY_STYLE = {'P0': '#000000', 'P1': '#d55e00', 'P2': '#662aa2',
+                'P3': '#009e73', 'P4': '#e69f00', 'P5': '#8c8c8c'}
 
 STATE_COLOR = {0: '#d55e00', 1: '#0072b2', 2: '#999999'}       # transient / steady / ambiguous
 STATE_LABEL = {0: 'Transient', 1: 'Steady', 2: 'Ambiguous'}
@@ -239,7 +244,7 @@ for fam, dirname in FAMILY_DIR.items():
         if j == 0:
             axes[0, j].set_ylabel('e (kg)', fontsize=ev.FONT_SIZE - 1)
         for i, c in enumerate(cols, start=1):
-            axes[i, j].plot(t, FEAT[c].to_numpy()[idx], color=ev.METHOD_STYLE['CoST'][0], linewidth=1.0)
+            axes[i, j].plot(t, FEAT[c].to_numpy()[idx], color=FAMILY_STYLE[fam], linewidth=1.0)
             shade_states(axes[i, j], t, st)
             if j == 0:
                 axes[i, j].set_ylabel(f'{c}\n({UNIT[c]})' if UNIT[c] != '-' else c,
@@ -369,7 +374,31 @@ print(sep.reindex(sep.cohens_d.abs().sort_values(ascending=False).index)
       .head(5)[['family', 'feature', 'D', 'cohens_d']].to_string(index=False))
 
 # =============================================================================
-# Step 8. hyperparameter 기록
+# Step 8. 방법론 문서 배포 — docs/methods/{계열}.md 를 전 단계의 같은 계열 폴더로 복사한다
+#
+#   문서의 원본은 `docs/` 에 둔다. outputs/ 는 재실행할 때 통째로 지우는 생성물 폴더라
+#   손으로 쓴 문서를 거기에만 두면 다음 실행에서 사라지기 때문이다.
+#   대신 마지막 단계에서 복사본을 뿌려, 결과를 보는 자리에서 바로 문서를 열 수 있게 한다.
+#   (파이프라인을 다시 돌리면 복사본도 자동으로 최신화된다)
+# =============================================================================
+t0 = time.time()
+DOC_SRC = 'docs/methods'
+STAGE_DIRS = ['outputs/02_features', 'outputs/03_screening', 'outputs/04_overlap', OUT_DIR]
+n_doc = 0
+for dirname in FAMILY_DIR.values():
+    src = f'{DOC_SRC}/{dirname}.md'
+    if not os.path.exists(src):                                # 제안 계열 4개에만 문서가 있다
+        continue
+    text = open(src, encoding='utf-8').read()
+    for stage in STAGE_DIRS:
+        dst = f'{stage}/{dirname}/{dirname}.md'
+        if os.path.isdir(f'{stage}/{dirname}'):
+            open(dst, 'w', encoding='utf-8', newline='\n').write(text)
+            n_doc += 1
+print(f'[Step 8] 방법론 문서 {n_doc}개 배포 완료 (원본 {DOC_SRC}/) ({time.time() - t0:.1f} s)')
+
+# =============================================================================
+# Step 9. hyperparameter 기록
 # =============================================================================
 cfg = {'SEED': SEED, 'DT': DT, 'WINDOWS': WINDOWS, 'W_MAIN': W_MAIN,
        'TIMELINE_SPEEDS': TIMELINE_SPEEDS, 'TIMELINE_SECONDS': TIMELINE_SECONDS,

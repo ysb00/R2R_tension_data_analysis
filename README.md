@@ -30,3 +30,17 @@ python code/05_visualize.py     # spectrogram, phase portrait
 `code/evaluation.py` 와 `code/splits.py` 는 B 저장소에서 **수정 없이 복사**한 평가 후단이다.
 출처와 커밋 hash 는 [code/external_versions.csv](code/external_versions.csv) 에 기록돼 있다.
 `Trigger 4` 는 `evaluation.py` 의 `_labels()` 한 곳에서만 읽힌다 (라벨 누출 차단).
+
+## 결과물 폴더
+
+단계마다 **제안 4계열 기준**으로 나뉜다 (`outputs/NN_단계/` 아래).
+
+| 폴더 | feature | 비고 |
+|---|---|---|
+| `P1_spectral/` | spectral centroid · roll-off · bandwidth | 제안 1 |
+| `P2_phase/` | instantaneous phase velocity | 제안 2 (PLV 기각) |
+| `P3_nonstationarity/` | rolling kurtosis · skewness · Hurst | 제안 3 |
+| `P4_physical/` | Hilbert envelope mean · std | 제안 4 (Tension-Speed 상관 기각) |
+| `P0_baseline/` | moving std · slope | B 통계 baseline 승계 기준점 |
+| `P5_additional/` | 진폭·추세 계열 5종 | 계획 3.2절에서 추가 |
+| `_cross/` | 계열을 넘나드는 결과와 통합본 | |

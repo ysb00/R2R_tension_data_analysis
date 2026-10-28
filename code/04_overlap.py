@@ -25,7 +25,7 @@
 #        outputs/03_screening/_cross/D_summary_all.csv  (상태 식별력 D — 같은 코드로 산출된 값을 재사용)
 #        outputs/01_merge/merged_data.csv (조건 컬럼)
 # 출력 : outputs/04_overlap/  — **feature 계열마다 폴더를 나눈다** (02·03 과 같은 이름)
-#          F0_baseline/ ~ F7_memory/  그 계열의 state_vs_condition.csv, state_diff_by_condition.csv,
+#          P0_baseline/ ~ P5_additional/  그 계열의 state_vs_condition.csv, state_diff_by_condition.csv,
 #                                     state_diff_variation.csv, 그 계열을 강조한 산점도
 #          _cross/                    전 계열 통합 csv, 전체 산점도, 속도별 상태 평균차 그림,
 #                                     hyperparameters.csv
@@ -58,9 +58,9 @@ CROSS_DIR = '_cross'             # 계열에 속하지 않는 산출물을 모�
 TS, RS, VS = ev.TS, ev.RS, ev.VS
 COND_AXES = [('tension', TS), ('speed', VS)]        # 조건 축 2개 (계획 0.1절: 둘 다 검토)
 
-FAMILY_STYLE = {'F0': ('#000000', 'o'), 'F1': ('#0072b2', 's'), 'F2': ('#009e73', '^'),
-                'F3': ('#d55e00', 'v'), 'F4': ('#cc79a7', 'D'), 'F5': ('#e69f00', 'P'),
-                'F6': ('#662aa2', 'X'), 'F7': ('#56b4e9', 'h')}
+# 계열별 고정 색 — 03_screening 과 같은 배정 (P0 검정 / 제안 4계열 유채색 / P5 회색)
+FAMILY_STYLE = {'P0': ('#000000', 'o'), 'P1': ('#d55e00', 'v'), 'P2': ('#662aa2', 'X'),
+                'P3': ('#009e73', '^'), 'P4': ('#e69f00', 'P'), 'P5': ('#8c8c8c', 's')}
 
 # =============================================================================
 # 함수

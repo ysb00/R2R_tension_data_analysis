@@ -27,13 +27,13 @@
 #        outputs/01_merge/merged_data.csv (e 와 조건 컬럼. `Trigger 4` 는 읽지 않는다)
 #        outputs/00_folds/folds.csv, folds_c.csv (B 의 fold 배정 그대로)
 # 출력 : outputs/03_screening/  — **feature 계열마다 폴더를 나눈다** (02_features 와 같은 이름)
-#          F0_baseline/ ~ F7_memory/   그 계열 feature 의 결과만 모은다
+#          P0_baseline/ P1_spectral/ P2_phase/ P3_nonstationarity/ P4_physical/ P5_additional/
 #              D_summary.csv        식별력 D
 #              DT_single.csv        단일 feature 의 D·T
-#              increment.csv        F0 에 1개씩 더했을 때의 ΔD·ΔT (F0_baseline 에는 없다 — 기준점이라 후보가 아니다)
+#              increment.csv        F0 에 1개씩 더했을 때의 ΔD·ΔT (P0_baseline 에는 없다 — 기준점이라 후보가 아니다)
 #              state_mean_diff.csv  상태별 feature 평균과 차이 부호
 #              DT_scatter_W144.*    그 계열을 강조한 D·T 산점도 (나머지 계열은 회색)
-#            F0_baseline/ 에는 승계 검증 결과(inheritance_check.csv, F0_W*_fold/run_metrics.csv)가 추가된다
+#            P0_baseline/ 에는 승계 검증 결과(inheritance_check.csv, F0_W*_fold/run_metrics.csv)가 추가된다
 #          _cross/                  계열을 넘나드는 결과 (계열 하나에 속하지 않는 것)
 #              전체 D·T 산점도, 전체 증분 막대그림, 전진 선택, 창 민감도, A-5 정규화,
 #              feature 상관행렬·heatmap, 전 계열 통합 csv, hyperparameters.csv
@@ -81,10 +81,10 @@ ID_COLS = ['run_id', 'k', TS, RS, VS]
 F0_COLS = ['movstd', 'movslope']                 # 기준점 (B 의 MovStd-Slope 와 같은 2차원)
 
 # 계열별 고정 색 (논문 스타일 — 그림 전체에서 계열마다 같은 색).
-# evaluation.py 의 METHOD_STYLE 과 같은 Okabe-Ito 계열 색을 쓴다
-FAMILY_STYLE = {'F0': ('#000000', 'o'), 'F1': ('#0072b2', 's'), 'F2': ('#009e73', '^'),
-                'F3': ('#d55e00', 'v'), 'F4': ('#cc79a7', 'D'), 'F5': ('#e69f00', 'P'),
-                'F6': ('#662aa2', 'X'), 'F7': ('#56b4e9', 'h')}
+# evaluation.py 의 METHOD_STYLE 과 같은 Okabe-Ito 계열 색을 쓴다.
+# P0(기준점)은 검정, 제안 4계열은 유채색, P5(추가)는 회색 — 제안분이 눈에 먼저 들어오게 한다
+FAMILY_STYLE = {'P0': ('#000000', 'o'), 'P1': ('#d55e00', 'v'), 'P2': ('#662aa2', 'X'),
+                'P3': ('#009e73', '^'), 'P4': ('#e69f00', 'P'), 'P5': ('#8c8c8c', 's')}
 
 # B 의 통계 baseline 수치 (승계 검증 대조표). 출처: B outputs/03_baselines/01_stat_ssd/ ·
 # outputs/04_speed_extrap/01_stat_ssd/ 의 *_fold_metrics.csv (커밋 caaac99)
@@ -266,8 +266,8 @@ for w in WINDOWS:
     t0 = time.time()
     FEAT = FEAT_BY_W[w]
     fm, rm = eval_z(build_z(F0_COLS), f'F0-W{w}', FOLD_LIST)
-    fm.to_csv(f'{OUT_DIR}/{FAMILY_DIR["F0"]}/F0_W{w}_fold_metrics.csv', index=False)
-    rm.to_csv(f'{OUT_DIR}/{FAMILY_DIR["F0"]}/F0_W{w}_run_metrics.csv', index=False)
+    fm.to_csv(f'{OUT_DIR}/{FAMILY_DIR["P0"]}/F0_W{w}_fold_metrics.csv', index=False)
+    rm.to_csv(f'{OUT_DIR}/{FAMILY_DIR["P0"]}/F0_W{w}_run_metrics.csv', index=False)
     for grp in ['tension', 'final_test']:
         got = t_scalar(fm, grp)
         f0_t[(w, grp)] = got
@@ -278,7 +278,7 @@ for w in WINDOWS:
     print(f'[Step 3] 창 {w:3d} F0: T(tension) {f0_t[(w, "tension")]:.4f}, '
           f'T(final_test) {f0_t[(w, "final_test")]:.4f} ({time.time() - t0:.1f} s)')
 inherit = pd.DataFrame(inherit)
-inherit.to_csv(f'{OUT_DIR}/{FAMILY_DIR["F0"]}/inheritance_check.csv', index=False)
+inherit.to_csv(f'{OUT_DIR}/{FAMILY_DIR["P0"]}/inheritance_check.csv', index=False)
 print('[Step 3] 승계 검증 (A 의 F0 vs B 의 MovStd-Slope, AUPRC(ns)):')
 print(inherit.to_string(index=False))
 

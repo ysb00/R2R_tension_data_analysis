@@ -18,20 +18,20 @@
 #   라벨은 채점 단계(evaluation.py 의 _labels)에서 run_id·k 로 조인해 가져온다. B 와 동일 구조.
 #
 # 입력 : outputs/01_merge/merged_data.csv  (`Trigger 4` 는 읽지 않는다)
-# 출력 : outputs/02_features/  — **feature 계열(= 사용자 제안 4계열)마다 폴더를 나눈다**
-#          F0_baseline/   movstd, movslope                       (B 통계 baseline 과 같은 기준점)
-#          F1_amplitude/  movmean_abs_e, movrange, movmad
-#          F2_shape/      movkurt, movskew                       <- 제안 P3 (비정상성) 일부
-#          F3_spectral/   spec_centroid, spec_rolloff85, spec_bandwidth   <- 제안 P1 (스펙트럼)
-#          F4_trend/      detrend_resid_std, half_mean_diff
-#          F5_envelope/   env_mean, env_std                      <- 제안 P4 (물리기반) 채택분
-#          F6_phase/      phase_vel_std                          <- 제안 P2 (위상) 채택분
-#          F7_memory/     hurst                                  <- 제안 P3 (비정상성) 일부
-#          _cross/        계열에 속하지 않는 공통 산출물
+# 출력 : outputs/02_features/  — **사용자 제안 4계열(P1~P4)마다 폴더를 나눈다**
+#          P1_spectral/         spec_centroid, spec_rolloff85, spec_bandwidth
+#          P2_phase/            phase_vel_std            (PLV 는 계획 3.1절에서 기각)
+#          P3_nonstationarity/  movkurt, movskew, hurst
+#          P4_physical/         env_mean, env_std        (Tension-Speed 상관은 기각)
+#          P0_baseline/         movstd, movslope         (제안 아님 — B 통계 baseline 승계 기준점)
+#          P5_additional/       movmean_abs_e, movrange, movmad,
+#                               detrend_resid_std, half_mean_diff
+#                                                        (제안 아님 — 계획 3.2절에서 추가)
+#          _cross/              계열에 속하지 않는 공통 산출물
 #        계열 폴더 안 : features_W{W}.csv.gz (run_id, k, 그 계열 feature), feature_summary.csv
 #        `_cross/` 안 : feature_scaling.csv (정의표 + 진폭 배율 지수, A-5 용),
 #                       run_scales.csv (run별 진폭 정규화 분모), hyperparameters.csv
-#        F7_memory/ 에는 hurst_fit_quality.csv (R/S log-log 적합 품질) 가 추가된다
+#        P3_nonstationarity/ 에는 hurst_fit_quality.csv (R/S log-log 적합 품질) 가 추가된다
 # 실행 : python code/02_features.py
 # =============================================================================
 import os, time
@@ -66,33 +66,40 @@ RS = 'ReWinder-Tension Setting Value (kg)'
 VS = 'Web Speed setting value (mm/sec)'
 
 # feature 정의표 — 이름 / 계열 / 진폭 배율 지수 / 단위 / 설명
+#
+#   계열은 **사용자가 제안한 4계열(P1~P4)을 그대로 쓴다** (지시 2026-10-28).
+#   제안에 없던 것은 두 묶음으로 따로 둔다 — 어느 것이 제안 feature 인지 구분되게 하기 위함이다.
+#     P0 = B 통계 baseline 승계 기준점 (제안 아님. 모든 비교의 출발점)
+#     P5 = 계획 3.2절에서 추가한 진폭·추세 계열 (제안 아님)
+#   제안 4계열 중 **PLV(P2)와 Tension-Speed 상관(P4)은 계획 3.1절에서 기각**돼 feature 가 없다.
+#
 #   배율 지수 : e -> c*e (c > 0, run 내 상수) 일 때 feature -> c^지수 * feature.
 #   1 = 진폭에 비례 (std 계열), 0 = 진폭 불변 (형상·주파수·위상·R/S 계열).
 #   A-5(진폭 정규화 3종)는 이 지수로 재계산한다 — feature 를 다시 산출할 필요가 없다.
 FEATURE_SPEC = [
-    ('movstd',            'F0', 1, 'kg',         '이동 표준편차 (ddof=1). B rolling_std_slope 그대로'),
-    ('movslope',          'F0', 1, 'kg/s',       '이동 최소제곱 1차 기울기. B rolling_std_slope 그대로 (부호 보존)'),
-    ('movmean_abs_e',     'F1', 1, 'kg',         '|e| 의 창 평균'),
-    ('movrange',          'F1', 1, 'kg',         '창 내 최댓값 - 최솟값'),
-    ('movmad',            'F1', 1, 'kg',         '창 평균에 대한 평균절대편차 mean(|x - mean(x)|)'),
-    ('movkurt',           'F2', 0, '-',          '창 첨도 (excess, 정규 = 0)'),
-    ('movskew',           'F2', 0, '-',          '창 왜도'),
-    ('spec_centroid',     'F3', 0, 'Hz',         '창 평균 제거 + Hann 후 진폭스펙트럼의 1차 모멘트'),
-    ('spec_rolloff85',    'F3', 0, 'Hz',         f'누적 진폭이 전체의 {ROLLOFF_FRACTION:.0%} 가 되는 최저 주파수'),
-    ('spec_bandwidth',    'F3', 0, 'Hz',         'centroid 기준 진폭스펙트럼의 2차 모멘트'),
-    ('detrend_resid_std', 'F4', 1, 'kg',         '창 내 1차 추세 제거 후 잔차 표준편차 (분모 W-1)'),
-    ('half_mean_diff',    'F4', 1, 'kg',         '창 후반 평균 - 전반 평균'),
-    ('env_mean',          'F5', 1, 'kg',         '창 평균 제거 후 Hilbert 포락선의 창 평균'),
-    ('env_std',           'F5', 1, 'kg',         'Hilbert 포락선의 창 표준편차'),
-    ('phase_vel_std',     'F6', 0, 'rad/sample', 'std(diff(unwrap(angle(hilbert(x - mean)))))'),
-    ('hurst',             'F7', 0, '-',          'R/S 기반 Hurst 지수 (블록 척도 log-log 회귀 기울기)'),
+    ('movstd',            'P0', 1, 'kg',         '이동 표준편차 (ddof=1). B rolling_std_slope 그대로'),
+    ('movslope',          'P0', 1, 'kg/s',       '이동 최소제곱 1차 기울기. B rolling_std_slope 그대로 (부호 보존)'),
+    ('spec_centroid',     'P1', 0, 'Hz',         '창 평균 제거 + Hann 후 진폭스펙트럼의 1차 모멘트'),
+    ('spec_rolloff85',    'P1', 0, 'Hz',         f'누적 진폭이 전체의 {ROLLOFF_FRACTION:.0%} 가 되는 최저 주파수'),
+    ('spec_bandwidth',    'P1', 0, 'Hz',         'centroid 기준 진폭스펙트럼의 2차 모멘트'),
+    ('phase_vel_std',     'P2', 0, 'rad/sample', 'std(diff(unwrap(angle(hilbert(x - mean)))))'),
+    ('movkurt',           'P3', 0, '-',          '창 첨도 (excess, 정규 = 0)'),
+    ('movskew',           'P3', 0, '-',          '창 왜도'),
+    ('hurst',             'P3', 0, '-',          'R/S 기반 Hurst 지수 (블록 척도 log-log 회귀 기울기)'),
+    ('env_mean',          'P4', 1, 'kg',         '창 평균 제거 후 Hilbert 포락선의 창 평균'),
+    ('env_std',           'P4', 1, 'kg',         'Hilbert 포락선의 창 표준편차'),
+    ('movmean_abs_e',     'P5', 1, 'kg',         '|e| 의 창 평균'),
+    ('movrange',          'P5', 1, 'kg',         '창 내 최댓값 - 최솟값'),
+    ('movmad',            'P5', 1, 'kg',         '창 평균에 대한 평균절대편차 mean(|x - mean(x)|)'),
+    ('detrend_resid_std', 'P5', 1, 'kg',         '창 내 1차 추세 제거 후 잔차 표준편차 (분모 W-1)'),
+    ('half_mean_diff',    'P5', 1, 'kg',         '창 후반 평균 - 전반 평균'),
 ]
 FEATURES = [f[0] for f in FEATURE_SPEC]
 
-# 계열 -> 폴더 이름. 결과물을 "어떤 방식(feature 계열)에 대한 결과인지" 로 나누기 위한 단일 출처다.
-# 03·04·05 단계도 같은 이름을 쓴다 (사용자 지시 2026-10-28).
-FAMILY_DIR = {'F0': 'F0_baseline', 'F1': 'F1_amplitude', 'F2': 'F2_shape', 'F3': 'F3_spectral',
-              'F4': 'F4_trend', 'F5': 'F5_envelope', 'F6': 'F6_phase', 'F7': 'F7_memory'}
+# 계열 -> 폴더 이름. 결과물을 "어떤 방식(제안 계열)에 대한 결과인지" 로 나누기 위한 단일 출처다.
+# 03·04·05 단계는 _cross/feature_scaling.csv 의 family_dir 컬럼을 읽어 이 이름을 따른다.
+FAMILY_DIR = {'P0': 'P0_baseline', 'P1': 'P1_spectral', 'P2': 'P2_phase',
+              'P3': 'P3_nonstationarity', 'P4': 'P4_physical', 'P5': 'P5_additional'}
 CROSS_DIR = '_cross'                                                   # 계열에 속하지 않는 공통 산출물
 FAMILY_COLS = {fam: [n for n, f, *_ in FEATURE_SPEC if f == fam] for fam in FAMILY_DIR}
 
@@ -299,7 +306,7 @@ scales['mad_run'] = g.e.apply(lambda s: float(np.median(np.abs(s - np.median(s))
 scales.reset_index().to_csv(f'{OUT_DIR}/{CROSS_DIR}/run_scales.csv', index=False)
 
 hq = pd.DataFrame(hurst_rows)
-hq.to_csv(f'{OUT_DIR}/{FAMILY_DIR["F7"]}/hurst_fit_quality.csv', index=False)   # F7 계열의 추정 품질
+hq.to_csv(f'{OUT_DIR}/{FAMILY_DIR["P3"]}/hurst_fit_quality.csv', index=False)   # P3 계열의 추정 품질
 print(f'[Step 3] 기술통계·정의표·분모·F7 품질 저장 완료 ({time.time() - t0:.1f} s)')
 print('[Step 3] F7 적합 품질 (창별 run 평균):')
 print(hq.groupby('W')[['hurst_mean', 'hurst_std', 'fit_r2_mean', 'fit_r2_p05']].mean().round(4).to_string())

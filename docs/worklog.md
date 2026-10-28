@@ -65,7 +65,8 @@ A 의 F0(`movstd`+`|movslope|`) 수치가 B 의 통계 baseline 과 일치한다
 ### 사용자 지시로 추가한 작업 (같은 날)
 | # | 지시 | 반영 |
 |---|---|---|
-| 1 | "결과물 저장할 때 어떤 방식에 대한 결과인지 **폴더로 구분**" | 02~05 전 단계를 **feature 계열 폴더 8개 + `_cross/`** 로 재구성했다. 폴더 이름은 `02_features.py` 의 `FAMILY_DIR` 이 단일 출처이고 03·04·05 는 `feature_scaling.csv` 의 `family_dir` 컬럼을 읽어 따른다. 계열 폴더에는 그 계열 행만, `_cross/` 에 `*_all.csv` 통합본과 계열을 넘나드는 결과(전진 선택·창 민감도·A-5·상관행렬)를 둔다 |
+| 1 | "결과물 저장할 때 어떤 방식에 대한 결과인지 **폴더로 구분**" | 02~05 전 단계를 계열 폴더 + `_cross/` 로 재구성했다. 폴더 이름은 `02_features.py` 의 `FEATURE_SPEC`·`FAMILY_DIR` 이 단일 출처이고 03·04·05 는 `_cross/feature_scaling.csv` 의 `family_dir` 컬럼을 읽어 따른다. 계열 폴더에는 그 계열 행만, `_cross/` 에 `*_all.csv` 통합본과 계열을 넘나드는 결과(전진 선택·창 민감도·A-5·상관행렬)를 둔다 |
+| 1b | "**제안했던 4가지에 따라 폴더 구성이 되어 있지 않다**" (같은 날 지적) | 처음에는 계획 3.2절의 F0~F7 8계열로 나눴는데, 이러면 **제안 P3(비정상성)이 `F2_shape`·`F7_memory` 두 폴더로 쪼개지고** 제안에 없던 F0·F1·F4 가 같은 층위에 섞인다. **제안 4계열 기준으로 다시 나눴다** — `P1_spectral` / `P2_phase` / `P3_nonstationarity` / `P4_physical` + `P0_baseline`(B 승계 기준점) + `P5_additional`(계획에서 추가한 진폭·추세) + `_cross`. 그림 색도 P0 검정 / 제안 4계열 유채색 / P5 회색으로 바꿔 제안분이 먼저 보이게 했다 |
 | 2 | "visualize 를 **방법론별로 보강**. steady/transient 차이와 feature 추출 결과를 보고 싶다. **최소 2가지 이상**" | `05_visualize.py` 를 다시 써서 계열마다 그림 **3종**을 만든다 — `state_distribution_W144`(상태별 분포 + D + Cohen's d), `timeline_W144`(원신호와 feature 를 같은 시간축에 쌓고 라벨 구간을 배경색으로), `window_separation`(창 3종 분리도). A-6 그림 2종은 해당 계열 폴더(F3·F6)로 들어가고, `_cross/` 에 전 계열 분리도 heatmap 을 추가했다 |
 
 ### 추가로 확인한 사실

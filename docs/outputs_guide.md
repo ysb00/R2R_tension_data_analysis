@@ -7,24 +7,27 @@
 
 ---
 
-## 0. 폴더 구조 — **feature 계열(= 제안 4계열)마다 나눈다**
+## 0. 폴더 구조 — **제안 4계열(P1~P4) 기준으로 나눈다**
 
-단계마다 `outputs/NN_이름/` 아래에 계열 폴더 8개 + `_cross/` 를 둔다. 같은 이름을 전 단계가 공유한다.
+단계마다 `outputs/NN_이름/` 아래에 계열 폴더 6개 + `_cross/` 를 둔다. 전 단계가 같은 이름을 쓴다.
 
-| 폴더 | feature | 제안 계열 |
+| 폴더 | feature | 비고 |
 |---|---|---|
-| `F0_baseline/` | `movstd`, `movslope` | – (B 통계 baseline 과 같은 기준점) |
-| `F1_amplitude/` | `movmean_abs_e`, `movrange`, `movmad` | – |
-| `F2_shape/` | `movkurt`, `movskew` | **P3** 비정상성 |
-| `F3_spectral/` | `spec_centroid`, `spec_rolloff85`, `spec_bandwidth` | **P1** 스펙트럼 |
-| `F4_trend/` | `detrend_resid_std`, `half_mean_diff` | – |
-| `F5_envelope/` | `env_mean`, `env_std` | **P4** 물리기반 채택분 |
-| `F6_phase/` | `phase_vel_std` | **P2** 위상 채택분 |
-| `F7_memory/` | `hurst` | **P3** 비정상성 |
-| `_cross/` | 계열에 속하지 않는 공통·통합 산출물 | – |
+| **`P1_spectral/`** | `spec_centroid`, `spec_rolloff85`, `spec_bandwidth` | 제안 1 — 스펙트럼 |
+| **`P2_phase/`** | `phase_vel_std` | 제안 2 — 위상. **PLV 는 계획 3.1절에서 기각** |
+| **`P3_nonstationarity/`** | `movkurt`, `movskew`, `hurst` | 제안 3 — 비정상성 |
+| **`P4_physical/`** | `env_mean`, `env_std` | 제안 4 — 물리기반. **Tension-Speed 상관은 기각** |
+| `P0_baseline/` | `movstd`, `movslope` | 제안 아님 — B 통계 baseline 승계 기준점. 모든 비교의 출발점 |
+| `P5_additional/` | `movmean_abs_e`, `movrange`, `movmad`, `detrend_resid_std`, `half_mean_diff` | 제안 아님 — 계획 3.2절에서 추가한 진폭·추세 계열 |
+| `_cross/` | 계열에 속하지 않는 공통·통합 산출물 | 전진 선택, 창 민감도, A-5, 상관행렬, `*_all.csv` |
 
 계열 폴더의 csv 는 그 계열 행만 담고, `_cross/` 에 `*_all.csv` 통합본이 함께 있다.
-제안 계열 중 **PLV(P2)와 Tension-Speed 상관(P4)은 계획 3.1절에서 기각**돼 폴더가 없다.
+**그림의 색도 이 구분을 따른다** — `P0` 검정 / 제안 4계열 유채색 / `P5` 회색이라, 산점도에서
+제안한 feature 가 먼저 눈에 들어온다. 계열 폴더에는 그 계열만 강조하고 나머지를 회색으로 깐
+산점도가 따로 저장된다.
+
+기각된 2종(PLV, Tension-Speed 상관)은 feature 가 없으므로 `P2_phase/`·`P4_physical/` 에
+해당 파일이 들어가지 않는다. 기각 근거는 `docs/research_plan.md` 3.1절이다.
 
 ---
 
@@ -90,14 +93,14 @@ T 는 fold 묶음 2개로 따로 낸다. `tension` = 미학습 장력 수준 5-f
 | `{계열}/feature_summary.csv` | 창별·feature별 기술통계 (`mean`, `std`, `min`, `q05`, `median`, `q95`, `max`, `n_unique`). `_cross/feature_summary_all.csv` 가 통합본 |
 | `_cross/feature_scaling.csv` | feature 정의표. **`amplitude_scale_exponent`** 가 핵심 — `e → c·e` (c 는 run 내 상수) 일 때 feature 가 `c^지수` 배가 된다. 1 = 진폭 비례(std 계열), 0 = 진폭 불변(형상·주파수·위상·R/S). A-5 는 이 지수로 환산하므로 feature 를 다시 산출하지 않는다 |
 | `_cross/run_scales.csv` | run별 진폭 정규화 분모. `mad_run` = run 전체 e 의 **중위절대편차** (0.0250–0.0500 kg) |
-| `F7_memory/hurst_fit_quality.csv` | F7 추정 안정성. log-log 결정계수 run 평균이 창 64 에서 0.986, 144 에서 0.974, 256 에서 0.971 이고 5분위도 0.93 이상이다 — R/S 적합 자체는 안정적이다 |
+| `P3_nonstationarity/hurst_fit_quality.csv` | F7 추정 안정성. log-log 결정계수 run 평균이 창 64 에서 0.986, 144 에서 0.974, 256 에서 0.971 이고 5분위도 0.93 이상이다 — R/S 적합 자체는 안정적이다 |
 | `_cross/hyperparameters.csv` | 실행에 쓴 설정값 전체 |
 
 ---
 
 ## 2. `outputs/03_screening/` — feature 선별
 
-### 2.1 `F0_baseline/inheritance_check.csv` — **가장 먼저 볼 표**
+### 2.1 `P0_baseline/inheritance_check.csv` — **가장 먼저 볼 표**
 
 A 의 F0(`movstd`, `|movslope|`) 수치가 B 의 통계 baseline 과 같은지 확인한다. 맞지 않으면
 데이터 처리가 B 와 다르다는 뜻이므로 이후 수치를 믿을 수 없다.
@@ -246,12 +249,12 @@ T 다. 특히 **D 가 가장 높은 `movmean_abs_e` 가 고속 외삽에서는 0
 | `timeline_W144` | x = 시간(s). 행 = 원신호 `e` + 그 계열 feature, 열 = 저속 50 / 고속 200 run. 배경색 = 라벨 구간 | **Q2.** 추출 결과를 원신호와 같은 시간축에 쌓아 본다. **창 144 에서는 feature 가 과도 구간 내내 평평하다가 전이 직후에야 움직인다** — backfill 규약의 효과(한계 L2)가 눈으로 보이는 그림이다 |
 | `window_separation` | x = feature, y = D. 막대 3개 = 창 64/144/256 | **Q1+Q2.** 같은 feature 를 창 3종에서 뽑았을 때 분리도가 어떻게 변하는지 |
 
-### 4.2 A-6 그림 2종 (계획 4.6절) — 해당 계열 폴더에 들어간다
+### 4.2 A-6 그림 2종 (계획 4.6절) — 해당 제안 계열 폴더에 들어간다
 
 | 파일 | 축 | 목적 / 해석 |
 |---|---|---|
-| `F3_spectral/spectrogram_W64` | x = 시간(s), y = 주파수(Hz, 0–2), 색 = PSD(dB) | 과도 → 정상 전이에서 스펙트럼이 어떻게 바뀌는지. 노란 선 = 전력가중 스펙트럼 중심, 주황 세로선 = 첫 steady 라벨, 흰 점선 = 회전 외란 `f_rot`. **진입 전 중심이 0.2–0.3 Hz 로 낮고 진입 후 0.5–0.7 Hz 로 올라간다** — 계획 3.1절의 방향 수정(과도가 저주파)과 일치한다 |
-| `F6_phase/phase_portrait_lag1` | x = e(t), y = e(t+0.109 s) | steady(파랑)는 원점 근처에 뭉치고 transient(주황)는 대각선을 따라 음의 방향으로 길게 늘어난다. 과도가 충격이 아니라 **느린 처짐**임을 보여준다 (lag-1 상관이 높아 궤적이 대각선에 붙어 있다) |
+| `P1_spectral/spectrogram_W64` | x = 시간(s), y = 주파수(Hz, 0–2), 색 = PSD(dB) | 과도 → 정상 전이에서 스펙트럼이 어떻게 바뀌는지. 노란 선 = 전력가중 스펙트럼 중심, 주황 세로선 = 첫 steady 라벨, 흰 점선 = 회전 외란 `f_rot`. **진입 전 중심이 0.2–0.3 Hz 로 낮고 진입 후 0.5–0.7 Hz 로 올라간다** — 계획 3.1절의 방향 수정(과도가 저주파)과 일치한다 |
+| `P2_phase/phase_portrait_lag1` | x = e(t), y = e(t+0.109 s) | steady(파랑)는 원점 근처에 뭉치고 transient(주황)는 대각선을 따라 음의 방향으로 길게 늘어난다. 과도가 충격이 아니라 **느린 처짐**임을 보여준다 (lag-1 상관이 높아 궤적이 대각선에 붙어 있다) |
 
 **spectrogram 의 분석창은 64 샘플(7.0 s)이다.** 주 창 144(15.7 s)를 쓰면 과도 구간 전체가 창
 하나에 들어가 전이 자체가 보이지 않는다 — 설명용 그림의 목적이 성립하지 않는다.
