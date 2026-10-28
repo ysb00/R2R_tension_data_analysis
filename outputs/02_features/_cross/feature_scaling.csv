@@ -1,0 +1,17 @@
+feature,family,family_dir,amplitude_scale_exponent,unit,definition
+movstd,F0,F0_baseline,1,kg,이동 표준편차 (ddof=1). B rolling_std_slope 그대로
+movslope,F0,F0_baseline,1,kg/s,이동 최소제곱 1차 기울기. B rolling_std_slope 그대로 (부호 보존)
+movmean_abs_e,F1,F1_amplitude,1,kg,|e| 의 창 평균
+movrange,F1,F1_amplitude,1,kg,창 내 최댓값 - 최솟값
+movmad,F1,F1_amplitude,1,kg,창 평균에 대한 평균절대편차 mean(|x - mean(x)|)
+movkurt,F2,F2_shape,0,-,"창 첨도 (excess, 정규 = 0)"
+movskew,F2,F2_shape,0,-,창 왜도
+spec_centroid,F3,F3_spectral,0,Hz,창 평균 제거 + Hann 후 진폭스펙트럼의 1차 모멘트
+spec_rolloff85,F3,F3_spectral,0,Hz,누적 진폭이 전체의 85% 가 되는 최저 주파수
+spec_bandwidth,F3,F3_spectral,0,Hz,centroid 기준 진폭스펙트럼의 2차 모멘트
+detrend_resid_std,F4,F4_trend,1,kg,창 내 1차 추세 제거 후 잔차 표준편차 (분모 W-1)
+half_mean_diff,F4,F4_trend,1,kg,창 후반 평균 - 전반 평균
+env_mean,F5,F5_envelope,1,kg,창 평균 제거 후 Hilbert 포락선의 창 평균
+env_std,F5,F5_envelope,1,kg,Hilbert 포락선의 창 표준편차
+phase_vel_std,F6,F6_phase,0,rad/sample,std(diff(unwrap(angle(hilbert(x - mean)))))
+hurst,F7,F7_memory,0,-,R/S 기반 Hurst 지수 (블록 척도 log-log 회귀 기울기)

@@ -1,0 +1,10 @@
+name,value
+SEED,0
+W_MAIN,144
+N_BINS,20
+N_COND_FOLDS,2
+COND_AXES,"['tension', 'speed']"
+COND_PRIMARY,"평균 쌍별 AUROC (우연 0.5, 상태 AUROC 와 같은 잣대)"
+COND_SECONDARY,"분위구간(20) Bayes 다중분류 정확도, run 단위 2-fold"
+D_SOURCE,outputs/03_screening/_cross/D_summary_all.csv (03_screening 과 같은 값 재사용)
+LABEL_USE,evaluation._labels() 로만 읽음 (분석 전용). feature 정의에는 미사용

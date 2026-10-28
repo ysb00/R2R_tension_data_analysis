@@ -1,0 +1,19 @@
+name,value
+DT,0.109
+ENTRY_MIN_CONSEC,10
+N_GMM_COMPONENTS,2
+GMM_COVARIANCE_TYPE,diag
+SEED,0
+N_SEEDS,5
+WINDOWS,"[64, 144, 256]"
+W_MAIN,144
+FOLD_SPEC,"[('tension', None), ('c', ['final_test'])]"
+T_PRIMARY,pooled_auprc
+T_SELECT_GROUP,tension
+FORWARD_MIN_GAIN,0.005
+FORWARD_MAX_DIM,6
+SLOPE_ABS,True
+F0_COLS,movstd+movslope
+SELECTED_COLS,movstd+movslope+hurst
+LABEL_USE,feature 순위·선택에만 사용 (정의에는 미사용). 선택 기준은 장력축 CV
+B_COMMIT,caaac99317e2a9b04039a369f3bb8059d4440bd7

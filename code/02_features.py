@@ -18,13 +18,20 @@
 #   라벨은 채점 단계(evaluation.py 의 _labels)에서 run_id·k 로 조인해 가져온다. B 와 동일 구조.
 #
 # 입력 : outputs/01_merge/merged_data.csv  (`Trigger 4` 는 읽지 않는다)
-# 출력 : outputs/02_features/
-#          features_W{W}.csv.gz     시점별 feature (run_id, k, 16 feature). gzip - 평문은 44 MB/창
-#          feature_summary.csv      창별·feature별 기술통계 (라벨 미사용)
-#          feature_scaling.csv      feature 정의표 + 진폭 배율 지수 (A-5 용)
-#          run_scales.csv           run별 진폭 정규화 분모 (설정값, MAD(run))
-#          hurst_fit_quality.csv    R/S log-log 적합 품질 (F7 추정 불안정성 보고용)
-#          hyperparameters.csv      실행에 쓴 설정값
+# 출력 : outputs/02_features/  — **feature 계열(= 사용자 제안 4계열)마다 폴더를 나눈다**
+#          F0_baseline/   movstd, movslope                       (B 통계 baseline 과 같은 기준점)
+#          F1_amplitude/  movmean_abs_e, movrange, movmad
+#          F2_shape/      movkurt, movskew                       <- 제안 P3 (비정상성) 일부
+#          F3_spectral/   spec_centroid, spec_rolloff85, spec_bandwidth   <- 제안 P1 (스펙트럼)
+#          F4_trend/      detrend_resid_std, half_mean_diff
+#          F5_envelope/   env_mean, env_std                      <- 제안 P4 (물리기반) 채택분
+#          F6_phase/      phase_vel_std                          <- 제안 P2 (위상) 채택분
+#          F7_memory/     hurst                                  <- 제안 P3 (비정상성) 일부
+#          _cross/        계열에 속하지 않는 공통 산출물
+#        계열 폴더 안 : features_W{W}.csv.gz (run_id, k, 그 계열 feature), feature_summary.csv
+#        `_cross/` 안 : feature_scaling.csv (정의표 + 진폭 배율 지수, A-5 용),
+#                       run_scales.csv (run별 진폭 정규화 분모), hyperparameters.csv
+#        F7_memory/ 에는 hurst_fit_quality.csv (R/S log-log 적합 품질) 가 추가된다
 # 실행 : python code/02_features.py
 # =============================================================================
 import os, time
@@ -81,6 +88,13 @@ FEATURE_SPEC = [
     ('hurst',             'F7', 0, '-',          'R/S 기반 Hurst 지수 (블록 척도 log-log 회귀 기울기)'),
 ]
 FEATURES = [f[0] for f in FEATURE_SPEC]
+
+# 계열 -> 폴더 이름. 결과물을 "어떤 방식(feature 계열)에 대한 결과인지" 로 나누기 위한 단일 출처다.
+# 03·04·05 단계도 같은 이름을 쓴다 (사용자 지시 2026-10-28).
+FAMILY_DIR = {'F0': 'F0_baseline', 'F1': 'F1_amplitude', 'F2': 'F2_shape', 'F3': 'F3_spectral',
+              'F4': 'F4_trend', 'F5': 'F5_envelope', 'F6': 'F6_phase', 'F7': 'F7_memory'}
+CROSS_DIR = '_cross'                                                   # 계열에 속하지 않는 공통 산출물
+FAMILY_COLS = {fam: [n for n, f, *_ in FEATURE_SPEC if f == fam] for fam in FAMILY_DIR}
 
 # =============================================================================
 # 함수
@@ -222,11 +236,11 @@ assert lengths.min() > max(WINDOWS), 'run 길이가 최대 창 길이보다 짧�
 # =============================================================================
 # Step 2. run별 · 창별 feature 산출
 # =============================================================================
+for d in list(FAMILY_DIR.values()) + [CROSS_DIR]:
+    os.makedirs(f'{OUT_DIR}/{d}', exist_ok=True)
 hurst_rows = []
 for w in WINDOWS:
     t0 = time.time()
-    out_path = f'{OUT_DIR}/features_W{w}.csv.gz'          # gzip csv (평문 44 MB -> 13 MB). pandas 가 확장자로 알아서 처리한다
-    assert not os.path.exists(out_path), f'이미 결과 파일이 있다 (덮어쓰기 금지): {out_path}'
     parts = []
     for run_id, g in df.groupby('run_id', sort=True):
         e = g.e.to_numpy()
@@ -240,27 +254,41 @@ for w in WINDOWS:
     feats = pd.concat(parts, ignore_index=True)
     n_bad = int(feats[FEATURES].isna().sum().sum())
     assert n_bad == 0, f'창 {w}: 결측 feature {n_bad} 개'
-    feats.to_csv(out_path, index=False, float_format='%.6g')
-    print(f'[Step 2] 창 {w:3d} ({w * DT:5.1f} s): {len(feats)} 시점 x {len(FEATURES)} feature -> {out_path} '
-          f'({os.path.getsize(out_path) / 1e6:.1f} MB, {time.time() - t0:.1f} s)')
+    # 계열마다 따로 저장한다 — 행 순서(run_id, k)는 모든 계열 파일에서 같다 (03 단계가 그대로 이어 붙인다)
+    total_mb = 0.0
+    for fam, dirname in FAMILY_DIR.items():
+        out_path = f'{OUT_DIR}/{dirname}/features_W{w}.csv.gz'   # gzip csv. pandas 가 확장자로 알아서 처리한다
+        assert not os.path.exists(out_path), f'이미 결과 파일이 있다 (덮어쓰기 금지): {out_path}'
+        feats[['run_id', 'k'] + FAMILY_COLS[fam]].to_csv(out_path, index=False, float_format='%.6g')
+        total_mb += os.path.getsize(out_path) / 1e6
+    print(f'[Step 2] 창 {w:3d} ({w * DT:5.1f} s): {len(feats)} 시점 x {len(FEATURES)} feature '
+          f'-> 계열 {len(FAMILY_DIR)}개 폴더 ({total_mb:.1f} MB, {time.time() - t0:.1f} s)')
 
 # =============================================================================
 # Step 3. 기술통계 · 정의표 · run별 진폭 분모 저장 (전부 라벨 미사용)
 # =============================================================================
 t0 = time.time()
 rows = []
-for w in WINDOWS:
-    f = pd.read_csv(f'{OUT_DIR}/features_W{w}.csv.gz')
-    for name, family, expo, unit, desc in FEATURE_SPEC:
-        s = f[name]
-        rows.append({'W': w, 'feature': name, 'family': family, 'unit': unit,
-                     'mean': s.mean(), 'std': s.std(ddof=1), 'min': s.min(),
-                     'q05': s.quantile(0.05), 'median': s.median(), 'q95': s.quantile(0.95),
-                     'max': s.max(), 'n_unique': s.nunique()})
-pd.DataFrame(rows).to_csv(f'{OUT_DIR}/feature_summary.csv', index=False)
+for fam, dirname in FAMILY_DIR.items():
+    frows = []
+    for w in WINDOWS:
+        f = pd.read_csv(f'{OUT_DIR}/{dirname}/features_W{w}.csv.gz')
+        for name in FAMILY_COLS[fam]:
+            s = f[name]
+            unit = next(u for n, _, _, u, _ in FEATURE_SPEC if n == name)
+            frows.append({'W': w, 'feature': name, 'family': fam, 'unit': unit,
+                          'mean': s.mean(), 'std': s.std(ddof=1), 'min': s.min(),
+                          'q05': s.quantile(0.05), 'median': s.median(), 'q95': s.quantile(0.95),
+                          'max': s.max(), 'n_unique': s.nunique()})
+    pd.DataFrame(frows).to_csv(f'{OUT_DIR}/{dirname}/feature_summary.csv', index=False)
+    rows += frows
+pd.DataFrame(rows).to_csv(f'{OUT_DIR}/{CROSS_DIR}/feature_summary_all.csv', index=False)
 
-pd.DataFrame([{'feature': n, 'family': fam, 'amplitude_scale_exponent': e, 'unit': u, 'definition': d}
-              for n, fam, e, u, d in FEATURE_SPEC]).to_csv(f'{OUT_DIR}/feature_scaling.csv', index=False)
+# feature 정의표 — 계열 폴더 이름까지 적어 둔다 (03·04·05 가 이 표로 폴더를 찾는다)
+pd.DataFrame([{'feature': n, 'family': fam, 'family_dir': FAMILY_DIR[fam],
+               'amplitude_scale_exponent': e, 'unit': u, 'definition': d}
+              for n, fam, e, u, d in FEATURE_SPEC]).to_csv(
+    f'{OUT_DIR}/{CROSS_DIR}/feature_scaling.csv', index=False)
 
 # run별 진폭 정규화 분모 — A-5 의 좌표 2개가 쓴다.
 #   setting_value : `Film-Tension Setting Value (kg)` (run 내 상수)
@@ -268,10 +296,10 @@ pd.DataFrame([{'feature': n, 'family': fam, 'amplitude_scale_exponent': e, 'unit
 g = df.groupby('run_id', sort=True)
 scales = g.agg(**{TS: (TS, 'first'), RS: (RS, 'first'), VS: (VS, 'first'), 'n': ('e', 'size')})
 scales['mad_run'] = g.e.apply(lambda s: float(np.median(np.abs(s - np.median(s)))))
-scales.reset_index().to_csv(f'{OUT_DIR}/run_scales.csv', index=False)
+scales.reset_index().to_csv(f'{OUT_DIR}/{CROSS_DIR}/run_scales.csv', index=False)
 
 hq = pd.DataFrame(hurst_rows)
-hq.to_csv(f'{OUT_DIR}/hurst_fit_quality.csv', index=False)
+hq.to_csv(f'{OUT_DIR}/{FAMILY_DIR["F7"]}/hurst_fit_quality.csv', index=False)   # F7 계열의 추정 품질
 print(f'[Step 3] 기술통계·정의표·분모·F7 품질 저장 완료 ({time.time() - t0:.1f} s)')
 print('[Step 3] F7 적합 품질 (창별 run 평균):')
 print(hq.groupby('W')[['hurst_mean', 'hurst_std', 'fit_r2_mean', 'fit_r2_p05']].mean().round(4).to_string())
@@ -286,7 +314,8 @@ cfg = {'SEED': SEED, 'DT': DT, 'WINDOWS': WINDOWS, 'W_MAIN': W_MAIN,
        'HURST_MIN_BLOCK': HURST_MIN_BLOCK, 'HURST_SCALE_RULE': 'W, W/2, W/4, ... >= HURST_MIN_BLOCK',
        'WINDOW_INCOMPLETE_RULE': 'backfill with first complete window (B 승계)',
        'RESIDUAL': 'e = Film Tension #1 (kg) - Film-Tension Setting Value (kg)',
-       'LABEL_USED': False, 'IN_PATH': IN_PATH, 'N_FEATURES': len(FEATURES)}
+       'LABEL_USED': False, 'IN_PATH': IN_PATH, 'N_FEATURES': len(FEATURES),
+       'FAMILY_DIR': str(FAMILY_DIR)}
 pd.DataFrame({'name': list(cfg), 'value': [str(v) for v in cfg.values()]}).to_csv(
-    f'{OUT_DIR}/hyperparameters.csv', index=False)
+    f'{OUT_DIR}/{CROSS_DIR}/hyperparameters.csv', index=False)
 print(f'[done] feature 산출 완료 - 창 {WINDOWS}, feature {len(FEATURES)}개 (총 {time.time() - t_all:.1f} s)')
